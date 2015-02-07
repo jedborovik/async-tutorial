@@ -261,7 +261,7 @@ What we have is great so far, but it hasn't really helped us too much on war on
 callback hell. The question is how do we express something like this with our 
 promises?
 
-`$ echo 'clue2.txt' > clue1; echo 'treasure.txt' > clue2.txt; echo '$$$' > treasure.txt` before running following examples.
+`$ echo 'clue2.txt' > clue1.txt ; echo 'treasure.txt' > clue2.txt; echo '$$$' > treasure.txt` before running following examples.
 */
 !function() {
   var fs = require('fs');
