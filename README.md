@@ -1,1 +1,2 @@
-# forwardjs talk
+# promises tutorial
+examples in `promise.js`
