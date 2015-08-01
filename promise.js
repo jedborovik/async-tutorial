@@ -18,7 +18,7 @@ Hello world callback example.
 }
 
 /*
-Let's now wrap fs.readFile in our own function so we can have a little 
+Let's now wrap fs.readFile in our own function so we can have a little
 more control over it (for example always have encoding equal 'utf8').
 */
 !function() {
@@ -59,7 +59,7 @@ to read, and then add a callback function later.
 }
 
 /*
-Right now our ability to defer setting the callback to later is completely 
+Right now our ability to defer setting the callback to later is completely
 tied to our implementation of readFile. Let's start to tease it apart so
 when we want to add similar functionality to a different function, we can.
 */
@@ -172,7 +172,7 @@ some changes to `promise.setCallback` so that it does.
             res = _callback(_err, _res);
           } catch (e) {
             err = e;
-          } 
+          }
           nextPromise.callCallbackWith(err, res);
         }
         return nextPromise;
@@ -221,7 +221,7 @@ Once this works, let's double check to make sure our error handling works.
             res = _callback(_err, _res);
           } catch (e) {
             err = e;
-          } 
+          }
           nextPromise.callCallbackWith(err, res);
         }
         return nextPromise;
@@ -257,8 +257,8 @@ Once this works, let's double check to make sure our error handling works.
 }
 
 /*
-What we have is great so far, but it hasn't really helped us too much on war on 
-callback hell. The question is how do we express something like this with our 
+What we have is great so far, but it hasn't really helped us too much on war on
+callback hell. The question is how do we express something like this with our
 promises?
 
 `$ echo 'clue2.txt' > clue1.txt ; echo 'treasure.txt' > clue2.txt; echo '$$$' > treasure.txt` before running following examples.
@@ -295,7 +295,7 @@ Right now if we try to return promises in our chain of callbacks, it doesn't wor
             res = _callback(_err, _res);
           } catch (e) {
             err = e;
-          } 
+          }
           nextPromise.callCallbackWith(err, res);
         }
         return nextPromise;
@@ -337,7 +337,7 @@ Right now if we try to return promises in our chain of callbacks, it doesn't wor
 /*
 The problem is that the return value (`res`) from _callback is sometimes a value we care
 about and sometimes it's a promise that whose resolved value is what we care about. Let's add
-a `resolve` function that will handle the case when `res` is either the value we care
+a `handleResult` function that will handle the case when `res` is either the value we care
 about or a promise.
 */
 !function() {
@@ -355,8 +355,8 @@ about or a promise.
           } catch (err) {
             nextPromise.callCallbackWith(err, null);
             return;
-          } 
-          resolve(nextPromise, res);
+          }
+          handleResult(nextPromise, res);
         }
         return nextPromise;
       },
@@ -369,7 +369,7 @@ about or a promise.
     return promise;
   }
 
-  function resolve(promise, value) {
+  function handleResult(promise, value) {
     if (value && 'function' == typeof value.setCallback) {
       value.setCallback(function(err, res) {
         promise.callCallbackWith(err, res);
@@ -406,8 +406,7 @@ about or a promise.
 }
 
 /*
-Let's start to transition to the standard promise API. Namely setCallback -> then, callCallbackWith -> resolve. 
-We already have a `resolve` function, so let's capitalize that to avoid the conflict.
+Let's start to transition to the standard promise API. Namely setCallback -> then, callCallbackWith -> resolve.
 */
 !function() {
   var fs = require('fs');
@@ -424,8 +423,8 @@ We already have a `resolve` function, so let's capitalize that to avoid the conf
           } catch (err) {
             nextPromise.resolve(err, null);
             return;
-          } 
-          Resolve(nextPromise, res);
+          }
+          handleResult(nextPromise, res);
         }
         return nextPromise;
       },
@@ -438,7 +437,7 @@ We already have a `resolve` function, so let's capitalize that to avoid the conf
     return promise;
   }
 
-  function Resolve(promise, value) {
+  function handleResult(promise, value) {
     if (value && 'function' == typeof value.then) {
       value.then(function(err, res) {
         promise.resolve(err, res);
@@ -480,7 +479,7 @@ Ok good that seems to still work.
 /*
 Another difference between what we have and what you'll often see with promises:
 our `then` (formerly `setCallback`) takes a single function that handles an
-error and a result. Normally you'll see two functions. One for handling the 
+error and a result. Normally you'll see two functions. One for handling the
 error, one for handling the result.
 
 Let's change our API to look like that.
@@ -501,8 +500,8 @@ Let's change our API to look like that.
           } catch (err) {
             nextPromise.resolve(err, null);
             return;
-          } 
-          Resolve(nextPromise, res);
+          }
+          handleResult(nextPromise, res);
         }
         errback = _errback;
         return nextPromise;
@@ -516,7 +515,7 @@ Let's change our API to look like that.
     return promise;
   }
 
-  function Resolve(promise, value) {
+  function handleResult(promise, value) {
     if (value && 'function' == typeof value.then) {
       value.then(function(res) {
         promise.resolve(null, res);
@@ -567,8 +566,8 @@ so now let's add it back in.
           } catch (err) {
             nextPromise.resolve(err, null);
             return;
-          } 
-          Resolve(nextPromise, res);
+          }
+          handleResult(nextPromise, res);
         }
         errback = _errback;
         return nextPromise;
@@ -582,7 +581,7 @@ so now let's add it back in.
     return promise;
   }
 
-  function Resolve(promise, value) {
+  function handleResult(promise, value) {
     if (value && 'function' == typeof value.then) {
       value.then(function(res) {
         promise.resolve(null, res);
@@ -622,7 +621,7 @@ so now let's add it back in.
 }
 
 /*
-This didn't handle the error correctly. We weren't able to handle it at the 
+This didn't handle the error correctly. We weren't able to handle it at the
 end of the promise chain. Lets change how we setup `errback`.
 */
 !function() {
@@ -640,8 +639,8 @@ end of the promise chain. Lets change how we setup `errback`.
           } catch (err) {
             nextPromise.resolve(err, null);
             return;
-          } 
-          Resolve(nextPromise, res);
+          }
+          handleResult(nextPromise, res);
         };
         errback = function(_err) {
           try {
@@ -661,7 +660,7 @@ end of the promise chain. Lets change how we setup `errback`.
     return promise;
   }
 
-  function Resolve(promise, value) {
+  function handleResult(promise, value) {
     if (value && 'function' == typeof value.then) {
       value.then(function(res) {
         promise.resolve(null, res);
@@ -701,7 +700,7 @@ end of the promise chain. Lets change how we setup `errback`.
 }
 
 /*
-Our error handlers early on don't seem to be doing much. It'd be nice if propogating 
+Our error handlers early on don't seem to be doing much. It'd be nice if propogating
 the error was the default. Let's change our code to add a default _errback function.
 */
 !function() {
@@ -719,8 +718,8 @@ the error was the default. Let's change our code to add a default _errback funct
           } catch (err) {
             nextPromise.resolve(err, null);
             return;
-          } 
-          Resolve(nextPromise, res);
+          }
+          handleResult(nextPromise, res);
         };
         _errback = _errback || function(err) {
           throw err;
@@ -743,7 +742,7 @@ the error was the default. Let's change our code to add a default _errback funct
     return promise;
   }
 
-  function Resolve(promise, value) {
+  function handleResult(promise, value) {
     if (value && 'function' == typeof value.then) {
       value.then(function(res) {
         promise.resolve(null, res);
@@ -779,7 +778,7 @@ the error was the default. Let's change our code to add a default _errback funct
 }
 
 /*
-Just like the `then` callback is separated out into both an error and success case instead 
+Just like the `then` callback is separated out into both an error and success case instead
 of a single case that handles both, right now our resolve function takes an error and
 result, whereas normally it only handles the result. The error resolution function
 is called reject. So let's implement that now.
@@ -799,8 +798,8 @@ is called reject. So let's implement that now.
           } catch (err) {
             nextPromise.reject(err);
             return;
-          } 
-          Resolve(nextPromise, res);
+          }
+          handleResult(nextPromise, res);
         };
         _errback = _errback || function(err) {
           throw err;
@@ -825,7 +824,7 @@ is called reject. So let's implement that now.
     return promise;
   }
 
-  function Resolve(promise, value) {
+  function handleResult(promise, value) {
     if (value && 'function' == typeof value.then) {
       value.then(function(res) {
         promise.resolve(res);
@@ -863,9 +862,9 @@ is called reject. So let's implement that now.
   });
 }
 /*
-Most promise libraries don't have a `createPromise` function, it's usually called defer. And 
+Most promise libraries don't have a `createPromise` function, it's usually called defer. And
 right now what we return (`promise`) has a bunch of methods on it, not just `then`.
-Normally the resolve and reject functions aren't included in the object returned by `then`. 
+Normally the resolve and reject functions aren't included in the object returned by `then`.
 We would never call resolve on the return value of then. So let's rename `createPromise` to
 `defer` and change what `then` returns.
 */
@@ -885,8 +884,8 @@ We would never call resolve on the return value of then. So let's rename `create
             } catch (err) {
               nextDeferred.reject(err);
               return;
-            } 
-            Resolve(nextDeferred, res);
+            }
+            handleResult(nextDeferred, res);
           };
           _errback = _errback || function(err) {
             throw err;
@@ -912,7 +911,7 @@ We would never call resolve on the return value of then. So let's rename `create
     return deferred;
   }
 
-  function Resolve(deferred, value) {
+  function handleResult(deferred, value) {
     if (value && 'function' == typeof value.then) {
       value.then(function(res) {
         deferred.resolve(res);
@@ -955,7 +954,7 @@ We've almost made it to the promised land. Even though our deferred/promise API
 is starting to seem familiar, our promises fail all the a-plus-promise tests.
 Just a few of the things that are still missing:
 
-1. Promises often have a way to check their progress. This is often implemented by 
+1. Promises often have a way to check their progress. This is often implemented by
 passing a third argument to `then`.
 
 2. Promises can also often be implemented to be thenable multiple times.
